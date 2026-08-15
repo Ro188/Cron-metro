@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Cronómetro</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: #000;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .timer {
+            font-size: clamp(55px, 17vw, 100px);
+            font-weight: 300;
+            letter-spacing: -3px;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 60px;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            width: min(80%, 320px);
+        }
+
+        button {
+            height: 60px;
+            border: none;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #start {
+            background: white;
+            color: black;
+        }
+
+        #stop {
+            background: #333;
+            color: white;
+        }
+
+        #reset {
+            background: #222;
+            color: #ff453a;
+        }
+
+        button:active {
+            transform: scale(0.97);
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="timer" id="timer">00:00:00</div>
+
+    <div class="buttons">
+        <button id="start">INICIAR</button>
+        <button id="stop">PARAR</button>
+        <button id="reset">REINICIAR</button>
+    </div>
+
+<script>
+
+    const STORAGE_KEY = "cronometro_estado";
+
+    let state = {
+        running: false,
+        startTime: null,
+        elapsed: 0
+    };
+
+    // Cargar el estado guardado
+    function loadState() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+
+            if (saved) {
+                state = JSON.parse(saved);
+            }
+        } catch (error) {
+            console.error("No se pudo cargar el estado:", error);
+        }
+    }
+
+    // Guardar el estado
+    function saveState() {
+        try {
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(state)
+            );
+        } catch (error) {
+            console.error("No se pudo guardar el estado:", error);
+        }
+    }
+
+    // Calcular tiempo actual
+    function getElapsedTime() {
+
+        if (state.running && state.startTime !== null) {
+
+            return state.elapsed + (
+                Date.now() - state.startTime
+            );
+
+        }
+
+        return state.elapsed;
+    }
+
+    // Convertir milisegundos a HH:MM:SS
+    function formatTime(milliseconds) {
+
+        const totalSeconds = Math.floor(milliseconds / 1000);
+
+        const hours = Math.floor(totalSeconds / 3600);
+
+        const minutes = Math.floor(
+            (totalSeconds % 3600) / 60
+        );
+
+        const seconds = totalSeconds % 60;
+
+        return (
+            String(hours).padStart(2, "0") + ":" +
+            String(minutes).padStart(2, "0") + ":" +
+            String(seconds).padStart(2, "0")
+        );
+    }
+
+    // Actualizar pantalla
+    function updateDisplay() {
+
+        const elapsed = getElapsedTime();
+
+        document.getElementById("timer").textContent =
+            formatTime(elapsed);
+    }
+
+    // INICIAR
+    document.getElementById("start").addEventListener("click", function() {
+
+        if (!state.running) {
+
+            state.running = true;
+            state.startTime = Date.now();
+
+            saveState();
+            updateDisplay();
+        }
+
+    });
+
+    // PARAR
+    document.getElementById("stop").addEventListener("click", function() {
+
+        if (state.running) {
+
+            state.elapsed = getElapsedTime();
+
+            state.running = false;
+            state.startTime = null;
+
+            saveState();
+            updateDisplay();
+        }
+
+    });
+
+    // REINICIAR
+    document.getElementById("reset").addEventListener("click", function() {
+
+        if (confirm("¿Seguro que quieres reiniciar el cronómetro?")) {
+
+            state = {
+                running: false,
+                startTime: null,
+                elapsed: 0
+            };
+
+            saveState();
+            updateDisplay();
+        }
+
+    });
+
+    // Actualización visual
+    setInterval(updateDisplay, 250);
+
+    // Cuando volvemos a abrir la aplicación
+    document.addEventListener("visibilitychange", function() {
+
+        if (!document.hidden) {
+            loadState();
+            updateDisplay();
+        }
+
+    });
+
+    // Inicializar
+    loadState();
+    updateDisplay();
+
+</script>
+
+</body>
+</html>
